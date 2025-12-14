@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Status - Biochip Pay</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; }
+    .card { max-width: 520px; margin: 0 auto; border: 1px solid #ddd; border-radius: 12px; padding: 18px; }
+    .muted { color: #666; font-size: 14px; }
+    pre { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Status do Pagamento</h2>
+    <p id="msg" class="muted">Carregando...</p>
+    <pre id="out" class="muted"></pre>
+  </div>
+
+  <script>
+    (async () => {
+      const params = new URLSearchParams(location.search);
+      const i = params.get("i");
+      const msg = document.getElementById("msg");
+      const out = document.getElementById("out");
+
+      if (!i) {
+        msg.textContent = "Faltou o id (i=...).";
+        return;
+      }
+
+      const r = await fetch(`/api/intent/status?i=${encodeURIComponent(i)}`);
+      const j = await r.json();
+      msg.textContent = j.ok ? "OK" : "Erro";
+      out.textContent = JSON.stringify(j, null, 2);
+    })();
+  </script>
+</body>
+</html>
