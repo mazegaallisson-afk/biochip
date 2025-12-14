@@ -1,7 +1,13 @@
-let intents = global.__INTENTS__;
-if (!intents) {
-  intents = new Map();
-  global.__INTENTS__ = intents;
+async function kvSet(key, valueObj) {
+  const url = process.env.UPSTASH_KV_REST_API_URL;
+  const token = process.env.UPSTASH_KV_REST_API_TOKEN;
+  if (!url || !token) throw new Error("UPSTASH_KV env vars missing");
+
+  const value = encodeURIComponent(JSON.stringify(valueObj));
+  const r = await fetch(`${url}/set/${encodeURIComponent(key)}/${value}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return await r.json();
 }
 
 module.exports = (req, res) => {
@@ -13,8 +19,8 @@ module.exports = (req, res) => {
   }
 
   let body = "";
-  req.on("data", chunk => body += chunk);
-  req.on("end", () => {
+  req.on("data", (chunk) => (body += chunk));
+  req.on("end", async () => {
     let data = {};
     try { data = JSON.parse(body || "{}"); } catch {}
 
@@ -31,15 +37,14 @@ module.exports = (req, res) => {
     }
 
     const intentId = "pi_" + Math.random().toString(36).slice(2, 10);
-    intents.set(intentId, {
+
+    const record = {
       intent_id: intentId,
       token,
       amount,
       status: "CREATED",
       created_at: new Date().toISOString()
-    });
+    };
 
-    res.statusCode = 200;
-    return res.end(JSON.stringify({ ok: true, intent_id: intentId }));
-  });
-};
+    try {
+      await kvSet(`intent:${intentId}`,
